@@ -1,0 +1,72 @@
+Step 1: Create university_professors table (source table)
+CREATE TABLE university_professors (
+    firstname TEXT,
+    lastname TEXT,
+    university TEXT,
+    university_shortname CHAR(3),
+    university_city TEXT,
+    function TEXT,
+    organization TEXT,
+    organization_sector TEXT
+);
+
+-- Step 2: Create universities table
+CREATE TABLE universities (
+    id CHAR(3) PRIMARY KEY,
+    university TEXT NOT NULL,
+    university_city TEXT NOT NULL
+);
+
+-- Insert unique data into universities table
+INSERT INTO universities (id, university, university_city)
+SELECT DISTINCT university_shortname, university, university_city
+FROM university_professors;
+
+-- Step 3: Create professors table
+CREATE TABLE professors (
+    id SERIAL PRIMARY KEY,
+    firstname TEXT NOT NULL,
+    lastname TEXT NOT NULL,
+    university_id CHAR(3) REFERENCES universities(id) ON DELETE CASCADE
+);
+
+-- Insert unique data into professors table
+INSERT INTO professors (firstname, lastname, university_id)
+SELECT DISTINCT firstname, lastname, university_shortname
+FROM university_professors;
+
+-- Step 4: Create organizations table
+CREATE TABLE organizations (
+    id SERIAL PRIMARY KEY,
+    organization TEXT NOT NULL,
+    organization_sector TEXT NOT NULL
+);
+
+-- Insert unique data into organizations table
+INSERT INTO organizations (organization, organization_sector)
+SELECT DISTINCT organization, organization_sector
+FROM university_professors;
+
+Step 5: Create affiliations table
+CREATE TABLE affiliations (
+    organization_id INT NOT NULL,
+    function TEXT NOT NULL,
+    professor_id INT NOT NULL
+);
+
+-- Insert data into the affiliations table
+INSERT INTO affiliations (organization_id, function, professor_id)
+SELECT 
+    org.id AS organization_id,
+    university_professors.function AS function,
+    prof.id AS professor_id
+FROM university_professors AS university_professors
+JOIN professors AS prof 
+    ON university_professors.firstname = prof.firstname 
+    AND university_professors.lastname = prof.lastname
+LEFT JOIN organizations AS org 
+    ON university_professors.organization = org.organization;
+
+-- Verify the data inserted into affiliations table
+
+SELECT * FROM affiliations
